@@ -28,7 +28,7 @@ else:
     print("requirements.txt not found.")
 
 # Download NLTK datasets (RUN THIS ONCE AND COMMENT OUT AFTER)
-nltk.download(['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'omw-1.4', 'vader_lexicon'])
+# nltk.download(['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'omw-1.4', 'vader_lexicon'])
 
 # Initialize Stopwords
 STOPWORDS = set(stopwords.words("english"))  
@@ -38,7 +38,7 @@ CUSTOM_STOPWORDS = {"i", "me", "my", "mine", "you", "your", "yours", "he", "she"
     "should", "a", "an", "the", "and", "or", "but", "if", "in", "on", "for", "with",
     "as", "at", "by", "from", "about", "into", "of", "to", "up", "down", "out", "over",
     "under", "again", "further", "then", "once", "also", "like","blocker","really","able", "bit","well", "made", "led",
-    "especially", "schedule", "seeing","week", "got","day","consider","nothing","whole"}  
+    "especially", "schedule", "seeing","week", "got","day","consider","nothing","whole","blocker","honour", "moment", "right" , "result"}  
 
 ALL_STOPWORDS = STOPWORDS.union(CUSTOM_STOPWORDS)
 
@@ -200,8 +200,8 @@ def generate_wordcloud():
         ax.imshow(wordcloud, interpolation='bilinear')
         ax.axis("off")
         ax.set_title(title, fontsize=18)
-    plt.tight_layout()
-    plt.show()
+    plt.tight_layout() 
+    # plt.show() 
 
 
 #=============================================
@@ -209,47 +209,107 @@ def generate_wordcloud():
 #=============================================
 
 
+    
+
+def plot_wordclouds():
+    # Hide dashboard
+    main_frame.pack_forget()
+    bg_colors = ["forestgreen", "white", "midnightblue"]   # customize these
+    colormaps = ["viridis", "plasma", "cool"]        # optional but fun
+
+
+    # Create frame inside main window
+    word_cloud_frame = ttk.Frame(root)
+    word_cloud_frame.pack(fill='both', expand=True)
+
+    # Build figure (no plt.show!!)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+    for ax, text, title, bg,  in zip(
+        axes,
+        [win_text, loss_text, blocker_text],
+        ["Wins", "Losses", "Blockers"],
+        bg_colors,
+        # colormaps
+    ):
+        wc = WordCloud(
+            width=800,
+            height=400,
+            background_color=bg,
+            # colormap=cmap
+        ).generate(text)
+
+        ax.imshow(wc, interpolation='bilinear')
+        ax.axis("off")
+
+        ax.text(
+            0.5, 0.5,
+            title,
+            fontsize=22,
+            fontweight="bold",
+            color="white" if bg != "white" else "black",
+            ha="center",
+            va="center",
+            bbox=dict(
+                boxstyle="round,pad=0.4",
+                facecolor="black" if bg != "black" else "white",
+                edgecolor="#72cbd7",
+                linewidth=2,
+                alpha=0.7
+            )
+        )
+
+
+    plt.tight_layout()
+
+    # Embed figure INTO Tkinter
+    canvas = FigureCanvasTkAgg(fig, master=word_cloud_frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill='both', expand=True)
+
+    # Back button
+    ttk.Button(
+        word_cloud_frame,
+        text="⬅ Back to Dashboard",
+        command=lambda: [
+            word_cloud_frame.pack_forget(),
+            main_frame.pack(fill='both', expand=True)
+        ]
+    ).pack(pady=10)
+
+
+
+
 def wordpair_frame(root, top_words, pairs, title):
+    main_frame.pack_forget()
     frame = ttk.Frame(root)
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(16, 6))  # bigger figure
     labels = [f"{w} → {pairs[w]}" if pairs[w] else w for w in top_words.keys()]
-    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako")
+    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako", width=0.8)
     ax.set_title(title, fontsize=14)
     ax.set_xlabel("Frequency")
-    ax.set_ylabel("Words → Commonly Paired Word")
+    ax.set_ylabel("Top Words → Commonly Paired Word")
+
+    fig.tight_layout(pad=3)  # prevent clipping
+    ax.set_position([0.20, 0.15, 0.7, 0.8])  #
 
     canvas = FigureCanvasTkAgg(fig, master=frame)
     canvas.draw()
-    canvas.get_tk_widget().pack(fill="both", expand=True)
+    canvas.get_tk_widget().pack(side='top', anchor='center', expand=True)
 
     return frame
-
-def plot_wordclouds():
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    for ax, text, title in zip(
-        axes,
-        [win_text, loss_text, blocker_text],
-        ["Wins", "Losses", "Blockers"]
-    ):
-        wc = WordCloud(width=800, height=400, background_color='black', colormap='viridis').generate(text)
-        ax.imshow(wc, interpolation='bilinear')
-        ax.axis("off")
-        ax.set_title(title, fontsize=18, color='gold')
-    plt.tight_layout()
-    plt.show()
-
 
 def show_word_pairs():
     main_frame.pack_forget()
     word_frame = ttk.Frame(root)
-    word_frame.pack(fill="both", expand=True )
+    word_frame.pack(fill="x" ,expand=True )
 
     nb = ttk.Notebook(word_frame)
-    nb.pack(fill="both", expand=True)
+    nb.pack(fill="x" , expand=True)
     
     top_wins, win_pairs = get_top_words_and_pairs(dataframe['win'],stopwords=ALL_STOPWORDS)
     top_losses, loss_pairs = get_top_words_and_pairs(dataframe['loss'],stopwords=ALL_STOPWORDS)
-    top_blockers, blocker_pairs = get_top_words_and_pairs(dataframe['blocker'])
+    top_blockers, blocker_pairs = get_top_words_and_pairs(dataframe['blocker'], stopwords=ALL_STOPWORDS)
 
 
     frames = {
