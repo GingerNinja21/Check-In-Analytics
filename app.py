@@ -14,9 +14,6 @@ from collections import Counter
 import tkinter as tk
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-
-
 import os
 
 
@@ -28,9 +25,9 @@ else:
     print("requirements.txt not found.")
 
 # Download NLTK datasets (RUN THIS ONCE AND COMMENT OUT AFTER)
-# nltk.download(['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'omw-1.4', 'vader_lexicon'])
+nltk.download(['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'omw-1.4', 'vader_lexicon'])
 
-# Initialize Stopwords
+# Initialize Stopwords - These will Be use to filter our data in order to only analyse the words that matter
 STOPWORDS = set(stopwords.words("english"))  
 CUSTOM_STOPWORDS = {"i", "me", "my", "mine", "you", "your", "yours", "he", "she", "it", "we", "they",
     "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been",
@@ -42,9 +39,16 @@ CUSTOM_STOPWORDS = {"i", "me", "my", "mine", "you", "your", "yours", "he", "she"
 
 ALL_STOPWORDS = STOPWORDS.union(CUSTOM_STOPWORDS)
 
-#=============================================
-# Loading and Cleaning the Dataset
-#=============================================
+#===============================================================================================================#
+# Loading and Cleaning the Dataset                                                                              #
+#===============================================================================================================#
+# - This section loads the raw dataset                                                                          #
+# - Uses keyword matching in order to identify win/loss/blocker columns.                                        #
+# - Extracts these columns into a clean dataframe.                                                              #
+# - Removes null values.                                                                                        #
+# - Applies regex in order to remove unwanted symbols, punctuation and unnecessary spacing from the dataset.    #
+#===============================================================================================================#
+
 dataframe_raw = pd.read_csv("reference/test_data.csv")
 dataframe_raw.columns = dataframe_raw.columns.str.lower().str.strip()
 
@@ -71,8 +75,8 @@ def clean_text(text):
     if pd.isna(text):
         return ""
     # Regex
-    text = re.sub(r"(?<![a-zA-Z0-9])'(?![a-zA-Z0-9])", " ", text)  # remove lonely quotes
-    text = re.sub(r"[^\w\s']", " ", text)  # remove all other punctuation
+    text = re.sub(r"(?<![a-zA-Z0-9])'(?![a-zA-Z0-9])", " ", text) 
+    text = re.sub(r"[^\w\s']", " ", text)  
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -81,9 +85,14 @@ for col in ["win", "loss", "blocker"]:
 
    
 
-#=============================================
-# Tokenization & Lemmatization
-#=============================================
+#===================================================================================#
+# Tokenization & Lemmatization                                                      #
+#===================================================================================#
+# - This section prepocesses text by tokenizing and lemmatizing the cleaned text    #
+# - Converts entries into a list of words.                                          #
+# - Removes stopwords and reduces each token to it's base form via lemmatization.   #
+# - Stores the tokens back into the win/loss/blocker columns of the dataframe       #
+#===================================================================================#
 
 # Lemmatization
 lemmatizer = WordNetLemmatizer()
@@ -104,9 +113,13 @@ for col in ['win', 'loss', 'blocker']:
 
     print(dataframe.head())
 
-#=============================================
-# Getting Top Words and Pairs
-#=============================================
+#========================================================================================================#
+# Getting Top Words and Pairs                                                                            #
+#========================================================================================================#
+# - This section identifies the most frequent words along with it's bigrams (word-pairs)                 #
+# - Cleans and tokenizes the text and filters out stopwords again.                                       #
+# - Counts how often each word appears and determines which word most frequently follows each top word.  #
+#========================================================================================================#
 def get_top_words_and_pairs(series, n=10, stopwords=ALL_STOPWORDS):
     if isinstance(series, pd.Series):
         series = series.dropna().astype(str).tolist()
@@ -160,9 +173,14 @@ get_top_words_and_pairs(dataframe['win'], stopwords=ALL_STOPWORDS)
 get_top_words_and_pairs(dataframe['loss'], stopwords=ALL_STOPWORDS)
 get_top_words_and_pairs(dataframe['blocker'], stopwords=ALL_STOPWORDS)
 
-#=============================================
-# Sentiment Analysis
-#=============================================
+#================================================================================================#
+# Sentiment Analysis                                                                             #
+#================================================================================================#
+# - This section focuses on running sentiment analysis on the tokenized text.                    #
+# - Uses VADER fir sentiment analysis                                                            #
+# - Converts tokenized list back into a full sentence in order to get accurate sentiment score.  #
+# - Classifies each entry as Positive, Neutral or Negative.                                      #
+#================================================================================================#
 
 Sent_Analysis = SentimentIntensityAnalyzer()
 
@@ -184,9 +202,15 @@ for col in ['win', 'loss', 'blocker']:
     dataframe[f"{col}_sentiment"] = dataframe[col].apply(analyze_sentiment)
 print(dataframe.head())
 
-#=============================================
-# Word Cloud Visualization
-#=============================================
+#===============================================================================#
+# Word Cloud Cluster                                                            #
+#===============================================================================#
+# - This section switches from the dashboard window to the word-cloud window.   #
+# - Generates 3 WordCloud visuals for each column (win/loss/blocker).           #
+# - Embed the figure inside a Tkinter frame.                                    #
+# - The figure is then rendered inside the app.                                 #
+#===============================================================================#
+
 win_text = " ".join([" ".join(x) for x in dataframe["win"]])
 loss_text = " ".join([" ".join(x) for x in dataframe["loss"]])
 blocker_text = " ".join([" ".join(x) for x in dataframe["blocker"]])
@@ -196,115 +220,213 @@ def generate_wordcloud():
     for ax, text, title in zip(axes,
                                [win_text, loss_text, blocker_text],
                                ["Wins Word Cloud", "Losses Word Cloud", "Blockers Word Cloud"]):
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+        wordcloud = WordCloud(width=800, height=400, background_color='#59a5d8').generate(text)
         ax.imshow(wordcloud, interpolation='bilinear')
         ax.axis("off")
         ax.set_title(title, fontsize=18)
     plt.tight_layout() 
-    # plt.show() 
-
-
-#=============================================
-# Tkinter Dashboard Setup
-#=============================================
-
-
     
 
 def plot_wordclouds():
-    # Hide dashboard
     main_frame.pack_forget()
-    bg_colors = ["forestgreen", "white", "midnightblue"]   # customize these
-    colormaps = ["viridis", "plasma", "cool"]        # optional but fun
-
-
-    # Create frame inside main window
-    word_cloud_frame = ttk.Frame(root)
+    bg_colors = ["forestgreen", "white", "midnightblue"]  
+    word_cloud_frame = tk.Frame(root, bg="#000000")
     word_cloud_frame.pack(fill='both', expand=True)
-
-    # Build figure (no plt.show!!)
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 10))
 
     for ax, text, title, bg,  in zip(
         axes,
         [win_text, loss_text, blocker_text],
         ["Wins", "Losses", "Blockers"],
         bg_colors,
-        # colormaps
     ):
         wc = WordCloud(
             width=800,
-            height=400,
+            height=800,
             background_color=bg,
-            # colormap=cmap
         ).generate(text)
 
         ax.imshow(wc, interpolation='bilinear')
         ax.axis("off")
-
+        
         ax.text(
             0.5, 0.5,
             title,
             fontsize=22,
             fontweight="bold",
-            color="white" if bg != "white" else "black",
+            color="white" ,
             ha="center",
             va="center",
             bbox=dict(
                 boxstyle="round,pad=0.4",
-                facecolor="black" if bg != "black" else "white",
-                edgecolor="#72cbd7",
+                facecolor="#FE7F2D",
+                edgecolor="#ffffff",
                 linewidth=2,
                 alpha=0.7
             )
         )
+        
+    btn_frame = tk.Frame(word_cloud_frame, bg="#000000")
+    btn_frame.pack(side="bottom", pady=10)
+    tk.Button(btn_frame, text="⬅ Back to Dashboard",font=("Lucida",15,), fg="#2D728F",background="#ffffff", command=lambda: [word_cloud_frame.pack_forget(), main_frame.pack(fill='both', expand=True)]).pack()
 
-
+    fig.set_facecolor(color="#000000")
     plt.tight_layout()
-
-    # Embed figure INTO Tkinter
     canvas = FigureCanvasTkAgg(fig, master=word_cloud_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(fill='both', expand=True)
+    
+#=====================================================================================#
+# Word Frequency Analysis                                                             #
+#=====================================================================================#
+# - This section performs topic modeling using LDA                                    #
+# - Performs word-pair frequency analysis                                             #
+# - Builds bar charts of the most common words along with thier strongest word-pair.  #
+# - Runs LDA on raw text in order to extract common themes.                           #
+# - Displays results in a Tkinter notebook.                                           #
+#=====================================================================================#
+def run_lda_on_series(series, num_topics=10, num_words=10,tab="wins"):
+    """
+    Run LDA on tokenized pandas Series and return the single dominant theme.
+    Wins: only positive themes
+    Loss/Blocker: only negative/neutral themes
+    """
+    docs = [" ".join(tokens) for tokens in series if isinstance(tokens, list)]
+    if len(docs) < 2:
+        return "Not enough data for LDA"
+    
+    stopwords = list(ALL_STOPWORDS) + [
+        "challenging", "even", "one", "enjoyed", "managed", "lot",
+        "went", "everything", "last", "felt", "issue", "none", "loss",
+        "still", "make"
+    ]
 
-    # Back button
-    ttk.Button(
-        word_cloud_frame,
-        text="⬅ Back to Dashboard",
-        command=lambda: [
-            word_cloud_frame.pack_forget(),
-            main_frame.pack(fill='both', expand=True)
+    vectorizer = CountVectorizer(stop_words=stopwords)
+    X = vectorizer.fit_transform(docs)
+
+    lda = LatentDirichletAllocation(
+        n_components=num_topics,
+        max_iter=20,
+        learning_method='online',
+        random_state=42
+    )
+    lda.fit(X)
+
+    terms = vectorizer.get_feature_names_out()
+    top_words = []
+    for topic in lda.components_:
+        words = [terms[i] for i in topic.argsort()[-num_words:]]
+        top_words.extend(words)
+
+    # -------------------------
+    # Theme Mapping
+    # -------------------------
+    positive_themes = {
+        "Learning & Development": [
+            "learn", "learning", "course", "datacamp", "plan", "study", 
+            "practice", "improve", "skill", "knowledge", "training", 
+            "develop", "achieve", "master", "understand", "enjoyed", 
+            "completed", "success", "growth"
+        ],
+        "Collaboration & Teamwork": [
+            "team", "collaboration", "partner", "together", "helped",
+            "supported", "mentored", "guided"
+        ],
+        "Personal Achievement": [
+            "win", "success", "goal", "milestone", "completed", "finished",
+            "achievement", "challenge", "progress"
+        ],
+        "Positive Feedback & Recognition": [
+            "appreciated", "recognized", "acknowledged", "praise",
+            "rewarded", "complimented", "encouraged"
         ]
-    ).pack(pady=10)
+    }
+
+    negative_themes = {
+        "Network & Tech Issues": ["network", "issue", "problem", "error", "bug", "connectivity"],
+        "Workload & Time Pressure": ["stress", "deadline", "pressure", "overwhelmed", "task", "busy"],
+        "Learning Obstacles": ["confused", "stuck", "challenging", "difficult", "hard", "lost"],
+        "Team & Communication Problems": ["miscommunication", "delay", "conflict", "misunderstood", "ignored"]
+    }
+
+    themes_dict = positive_themes if tab == "wins" else negative_themes
+
+    # Count theme hits
+    theme_counts = {theme:0 for theme in themes_dict}
+    for word in top_words:
+        for theme, words in themes_dict.items():
+            if word in words:
+                theme_counts[theme] += 1
+
+    # Return dominant theme
+    dominant_theme = max(theme_counts, key=theme_counts.get)
+    return dominant_theme if theme_counts[dominant_theme] > 0 else "General"
 
 
-
-
-def wordpair_frame(root, top_words, pairs, title):
+def wordpair_frame(root, top_words, pairs, title, raw_series):
     main_frame.pack_forget()
-    frame = ttk.Frame(root)
-    fig, ax = plt.subplots(figsize=(16, 6))  # bigger figure
+    frame = tk.Frame(root, bg="black")
+    frame.columnconfigure(0, weight=1)
+    frame.columnconfigure(1, weight=1)
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_rowconfigure(1, weight=5)
+
+    # ----------------------
+    # LEFT SIDE — BAR GRAPH
+    # ----------------------
+    fig, ax = plt.subplots(figsize=(8, 5))
     labels = [f"{w} → {pairs[w]}" if pairs[w] else w for w in top_words.keys()]
-    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako", width=0.8)
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel("Frequency")
-    ax.set_ylabel("Top Words → Commonly Paired Word")
+    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako")
+    ax.set_title(title, fontsize=16)
+    ax.set_xlabel("Frequency", fontsize=16, color="#FE7F2D")
+    ax.set_ylabel("Top Word → Pair", fontsize=16, color="#FE7F2D")
 
-    fig.tight_layout(pad=3)  # prevent clipping
-    ax.set_position([0.20, 0.15, 0.7, 0.8])  #
-
+    fig.tight_layout()
     canvas = FigureCanvasTkAgg(fig, master=frame)
+    tk.Label(frame, anchor="center", font=("Lucida", 20, "bold"),
+             fg="#FE7F2D", bg="#000000", text="Word Frequency Analysis").grid(row=0, column=0)
     canvas.draw()
-    canvas.get_tk_widget().pack(side='top', anchor='center', expand=True)
+    canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
+    # ----------------------
+    # RIGHT SIDE — DOMINANT THEME
+    # ----------------------
+    topic_box = tk.Text(frame, width=40, height=20, wrap="word",
+                        font=("Lucida", 15), bg="#FE7F2D", fg="#000000")
+    topic_box.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+
+    # Pass tab based on title
+    tab_map = {"Wins": "wins", "Losses": "loss", "Blockers": "blocker"}
+    dominant_theme = run_lda_on_series(raw_series, tab=tab_map.get(title, "wins"))
+
+    topic_box.tag_configure("big_bold", font=("Lucida", 18, "bold"), foreground="#000000")
+    topic_box.insert("end", f"Dominant Theme\n", "big_bold")
+    topic_box.insert("end", dominant_theme + "\n\n")
+
+    topic_box.configure(state="disabled")
     return frame
 
 def show_word_pairs():
-    main_frame.pack_forget()
-    word_frame = ttk.Frame(root)
-    word_frame.pack(fill="x" ,expand=True )
 
-    nb = ttk.Notebook(word_frame)
+    #Styling
+    style = ttk.Style()
+    style.configure("TNotebook", background="black")
+    style.configure("TNotebook.Tab",
+                    background="#000000",
+                    foreground="#FE7F2D",
+                    font=("Lucida", 12, "bold"),
+                    padding=[12, 6])
+    style.map("TNotebook.Tab",
+            background=[("selected", "#000000")],
+            foreground=[("selected", "#FE7F2D")])
+
+    main_frame.pack_forget()
+    word_frame = tk.Frame(root, bg="#000000")
+    
+    word_frame.pack(fill="x" ,expand=True )
+    
+    nb = ttk.Notebook(word_frame,style="TNotebook")
+    
     nb.pack(fill="x" , expand=True)
     
     top_wins, win_pairs = get_top_words_and_pairs(dataframe['win'],stopwords=ALL_STOPWORDS)
@@ -318,28 +440,146 @@ def show_word_pairs():
         "Blockers": (top_blockers, blocker_pairs)
     }
 
+    col_map = {"Wins": "win", "Losses": "loss", "Blockers": "blocker"}
+
     for title, (top_words, pairs) in frames.items():
-        tab = wordpair_frame(nb, top_words, pairs, title)
-        nb.add(tab, text=title  )
+        tab = wordpair_frame(nb, top_words, pairs, title, dataframe[col_map[title]])
+        nb.add(tab, text=title ,padding=10 )
+
 
     ttk.Button(word_frame, text="⬅ Back to Dashboard",
                command=lambda: [word_frame.pack_forget(), main_frame.pack(fill='both', expand=True)]
                ).pack(pady=10)
 
+    update_counters()
 
+
+
+
+
+#==========================================================================#
+# Dashboard widgets                                                        #
+#==========================================================================#
+#  This section updates the dashboard’s summary counters by computing:     #
+# (1) how many top words were found across Wins/Losses/Blockers,           #
+# (2) how many LDA-derived trends were discovered, and                     #
+# (3) the overall sentiment by comparing total positive vs negative        #
+# entries. The values are then pushed directly into the dashboard          #
+# labels to keep the UI in sync with the latest analysis.                  #
+#==========================================================================#
+
+def update_counters():
+    # Top words discovered across all themes
+    top_wins, _ = get_top_words_and_pairs(dataframe['win'])
+    top_losses, _ = get_top_words_and_pairs(dataframe['loss'])
+    top_blockers, _ = get_top_words_and_pairs(dataframe['blocker'])
+    total_top_words = len(top_wins) + len(top_losses) + len(top_blockers)
+
+    # Trends discovered (number of LDA topics found)
+    lda_wins = run_lda_on_series(dataframe['win'], num_topics=1)
+    lda_losses = run_lda_on_series(dataframe['loss'], num_topics=1)
+    lda_blockers = run_lda_on_series(dataframe['blocker'], num_topics=1)
+    total_trends = len(lda_wins) + len(lda_losses) + len(lda_blockers)
+
+    # Overall sentiment: just count positives vs negatives
+    pos_count = sum(dataframe[col+"_sentiment"].value_counts().get("Positive", 0)
+                    for col in ['win','loss','blocker'])
+    neg_count = sum(dataframe[col+"_sentiment"].value_counts().get("Negative", 0)
+                    for col in ['win','loss','blocker'])
+    overall_sentiment = "Positive" if pos_count >= neg_count else "Negative"
+
+    # Update labels
+    lbl_top_words.config(text=str(total_top_words))
+    lbl_trends.config(text=str(total_trends))
+    lbl_sentiment.config(text=overall_sentiment)
+
+
+def on_close():
+    root.destroy()
 
 # initialize Tkinter
 root = tk.Tk()
 root.title("Data Insights Dashboard")
 root.geometry("1200x700")
+root.configure(bg="#000000")
 
-main_frame = ttk.Frame(root)
+main_frame = tk.Frame(root,bg="#000000")
 main_frame.pack(fill="both", expand=True)
 
-ttk.Label(main_frame, text="📊 Data Visualization Dashboard",
-        font=("Segoe UI", 18, "bold")).pack(pady=20)
-ttk.Button(main_frame, text="Show Word Clouds", command=plot_wordclouds).pack(pady=10)
-ttk.Button(main_frame, text="View Word Partnerships", command=show_word_pairs).pack(pady=20)
+root.protocol("WM_DELETE_WINDOW", on_close)
 
 
+
+
+
+
+#================================================================================================#
+# Main window layout                                                                             #
+#================================================================================================#
+# - This section focuses on the styling and Tkinter implementation.                              #
+# - Sets up the main dashboard layout using Tkinter’s grid system.                   #
+#       display_container holds the page title, main buttons, and counter section.               #
+#       counter_container` shows summary metrics: top words, LDA trends, and overall sentiment.  #
+#       buttons_container` hosts navigation buttons for Word Cloud and Frequency Analysis views. #
+#================================================================================================#
+
+main_frame.grid_columnconfigure(0, weight=1) 
+main_frame.grid_columnconfigure(1, weight=0) 
+main_frame.grid_rowconfigure(0, weight=1)
+main_frame.grid_rowconfigure(1,weight=1)
+
+
+
+
+display_container = tk.Frame(main_frame, bg="#000000")
+display_container.grid(row=1, column=0, sticky="new", padx=10, pady=60)
+
+counter_container = tk.Frame(display_container, bg="black", padx=10)
+counter_container.grid(row=1, column=1, sticky="new")
+
+display_container.grid_columnconfigure(0, weight=1) 
+display_container.grid_columnconfigure(1, weight=2) 
+display_container.grid_columnconfigure(2, weight=1)
+display_container.grid_rowconfigure(0, weight=1)
+display_container.grid_rowconfigure(1,weight=1)
+display_container.grid_rowconfigure(2,weight=1)
+display_container.grid_rowconfigure(3,weight=1)
+
+tk.Label(display_container, text="Umuzi Check-In Data Analysis",
+        font=("Lucida", 40, "bold"),bg="black",fg="#FE7F2D").grid(row=0, column=1, sticky="n",pady=20)
+
+
+buttons_container= tk.Frame(display_container, bg="#000000")
+buttons_container.grid(row=2, column=1, sticky="new",pady=30)
+buttons_container.grid_columnconfigure((0,1),weight=1)
+
+
+tk.Button(buttons_container, text="Word Cloud Clustering",font=("Lucida", 20,"bold"),bg="#ffffff",fg="#2D728F", command=plot_wordclouds).grid(row=0, column=0, sticky="nsew",padx=5)
+tk.Button(buttons_container, text="Frequency Analysis",font=("Lucida", 20,"bold"),bg="#ffffff", fg="#2D728F",command=show_word_pairs).grid(row=0, column=1, sticky="nsew",padx=5 )
+
+
+
+counter_container.grid_columnconfigure((0,1,2), weight=1)
+counter_container.grid_rowconfigure(0, weight=1)
+counter_container.grid_rowconfigure(1,weight=2)
+
+# FREQUENT TERMS
+tk.Label(counter_container, text="FREQUENT TERMS", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=0)
+lbl_top_words = tk.Label(counter_container, text="0", font=("Lucida", 50 ), bg="black", fg="#FFFFFF")
+lbl_top_words.grid(row=1, column=0,)
+
+# TRENDS DISCOVERED
+tk.Label(counter_container, text="TRENDS DISCOVERED", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=1)
+lbl_trends = tk.Label(counter_container, text="0", font=("Lucida", 50), bg="black", fg="#ffffff")
+lbl_trends.grid(row=1, column=1,)
+
+# OVERALL SENTIMENT
+tk.Label(counter_container, text="OVERALL SENTIMENT", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=2)
+lbl_sentiment = tk.Label(counter_container, text="Neutral", font=("Lucida", 50, ), bg="black", fg="#89F7A1")
+lbl_sentiment.grid(row=1, column=2)
+
+
+
+
+update_counters()
 root.mainloop()
