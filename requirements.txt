@@ -1,7 +1,6 @@
-pandas
-nltk
-scikit-learn
 matplotlib
-wordcloud
-tkinter
+nltk
+pandas
+scikit-learn
 seaborn
+wordcloud

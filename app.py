@@ -1,20 +1,22 @@
+import os
+import re
+import sys
+from collections import Counter
+
+import matplotlib.pyplot as plt
+import nltk
 import pandas as pd
 import seaborn as sns
-import re
-import nltk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from nltk.corpus import stopwords, wordnet
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 from nltk.sentiment import SentimentIntensityAnalyzer
-from sklearn.feature_extraction.text import CountVectorizer
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 from sklearn.decomposition import LatentDirichletAllocation
-import matplotlib.pyplot as plt
+from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
-from collections import Counter
 import tkinter as tk
 from tkinter import ttk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import os
 
 
 if os.path.exists("requirements.txt"):
@@ -227,6 +229,7 @@ def generate_wordcloud():
     plt.tight_layout() 
     
 
+
 def plot_wordclouds():
     main_frame.pack_forget()
     bg_colors = ["forestgreen", "white", "midnightblue"]  
@@ -365,11 +368,11 @@ def run_lda_on_series(series, num_topics=10, num_words=10,tab="wins"):
 
 def wordpair_frame(root, top_words, pairs, title, raw_series):
     main_frame.pack_forget()
-    frame = tk.Frame(root, bg="black")
-    frame.columnconfigure(0, weight=1)
-    frame.columnconfigure(1, weight=1)
-    frame.grid_rowconfigure(0, weight=1)
-    frame.grid_rowconfigure(1, weight=5)
+    wordpair_frame = tk.Frame(root, bg="black")
+    wordpair_frame.columnconfigure(0, weight=1)
+    wordpair_frame.columnconfigure(1, weight=1)
+    wordpair_frame.grid_rowconfigure(0, weight=1)
+    wordpair_frame.grid_rowconfigure(1, weight=5)
 
     # ----------------------
     # LEFT SIDE — BAR GRAPH
@@ -382,8 +385,8 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     ax.set_ylabel("Top Word → Pair", fontsize=16, color="#FE7F2D")
 
     fig.tight_layout()
-    canvas = FigureCanvasTkAgg(fig, master=frame)
-    tk.Label(frame, anchor="center", font=("Lucida", 20, "bold"),
+    canvas = FigureCanvasTkAgg(fig, master=wordpair_frame)
+    tk.Label(wordpair_frame, anchor="center", font=("Lucida", 20, "bold"),
              fg="#FE7F2D", bg="#000000", text="Word Frequency Analysis").grid(row=0, column=0)
     canvas.draw()
     canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
@@ -391,7 +394,7 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     # ----------------------
     # RIGHT SIDE — DOMINANT THEME
     # ----------------------
-    topic_box = tk.Text(frame, width=40, height=20, wrap="word",
+    topic_box = tk.Text(wordpair_frame, width=40, height=20, wrap="word",
                         font=("Lucida", 15), bg="#FE7F2D", fg="#000000")
     topic_box.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
@@ -404,7 +407,7 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     topic_box.insert("end", dominant_theme + "\n\n")
 
     topic_box.configure(state="disabled")
-    return frame
+    return wordpair_frame
 
 def show_word_pairs():
 
@@ -422,6 +425,7 @@ def show_word_pairs():
 
     main_frame.pack_forget()
     word_frame = tk.Frame(root, bg="#000000")
+  
     
     word_frame.pack(fill="x" ,expand=True )
     
@@ -495,10 +499,16 @@ def update_counters():
 
 
 def on_close():
-    root.destroy()
-
+    # Destroy all windows
+    for widget in root.winfo_children():
+        widget.destroy()
+    # Quit Tkinter mainloop
+    root.quit()
+    # Exit Python
+    sys.exit()
 # initialize Tkinter
 root = tk.Tk()
+
 root.title("Data Insights Dashboard")
 root.geometry("1200x700")
 root.configure(bg="#000000")
@@ -522,6 +532,7 @@ root.protocol("WM_DELETE_WINDOW", on_close)
 #       counter_container` shows summary metrics: top words, LDA trends, and overall sentiment.  #
 #       buttons_container` hosts navigation buttons for Word Cloud and Frequency Analysis views. #
 #================================================================================================#
+
 
 main_frame.grid_columnconfigure(0, weight=1) 
 main_frame.grid_columnconfigure(1, weight=0) 
