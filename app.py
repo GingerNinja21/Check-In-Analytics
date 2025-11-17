@@ -206,7 +206,7 @@ ALL_STOPWORDS = STOPWORDS.union(CUSTOM_STOPWORDS)
 # - Applies regex in order to remove unwanted symbols, punctuation and unnecessary spacing from the dataset.    #
 #===============================================================================================================#
 
-dataframe_raw = pd.read_csv("reference/test_data.csv")
+dataframe_raw = pd.read_csv("Copy of Umuzi XB1 Check in (Responses) - Form Responses 1.csv")
 dataframe_raw.columns = dataframe_raw.columns.str.lower().str.strip()
 
 # Find columns based on keywords
@@ -553,7 +553,7 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
                         font=("Lucida", 15), bg="#FE7F2D", fg="#000000")
     topic_box.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
-    # tab_map = {"Wins": "wins", "Losses": "loss", "Blockers": "blocker"}
+   
 
     topic_box.tag_configure("big_bold", font=("Lucida", 18, "bold"), foreground="#000000")
     topic_box.insert("end", f"Dominant Theme\n", "big_bold")
@@ -657,11 +657,8 @@ def update_counters():
     top_blockers, _ = get_top_words_and_pairs(dataframe['blocker'])
     total_top_words = len(top_wins) + len(top_losses) + len(top_blockers)
 
-    # Trends discovered (number of LDA topics found)
-    # lda_wins = run_lda_on_series(dataframe['win'], num_topics=1)
-    # lda_losses = run_lda_on_series(dataframe['loss'], num_topics=1)
-    # lda_blockers = run_lda_on_series(dataframe['blocker'], num_topics=1)
-    # total_trends = len(lda_wins) + len(lda_losses) + len(lda_blockers)
+    # Entries Received
+    total_entries = len(dataframe)
 
     # Overall sentiment: just count positives vs negatives
     pos_count = sum(dataframe[col+"_sentiment"].value_counts().get("Positive", 0)
@@ -672,7 +669,7 @@ def update_counters():
 
     # Update labels
     lbl_top_words.config(text=str(total_top_words))
-    lbl_trends.config(text=str(15))
+    lbl_entries.config(text=str(total_entries))
     lbl_sentiment.config(text=overall_sentiment)
 
 
@@ -754,10 +751,10 @@ tk.Label(counter_container, text="FREQUENT TERMS", font=("Lucida", 16, "bold"), 
 lbl_top_words = tk.Label(counter_container, text="0", font=("Lucida", 50 ), bg="black", fg="#FFFFFF")
 lbl_top_words.grid(row=1, column=0,)
 
-# TRENDS DISCOVERED
-tk.Label(counter_container, text="TRENDS DISCOVERED", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=1)
-lbl_trends = tk.Label(counter_container, text="0", font=("Lucida", 50), bg="black", fg="#ffffff")
-lbl_trends.grid(row=1, column=1,)
+# ENTRIES ANALYSED
+tk.Label(counter_container, text="ENTRIES ANALYSED", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=1)
+lbl_entries = tk.Label(counter_container, text="0", font=("Lucida", 50), bg="black", fg="#ffffff")
+lbl_entries.grid(row=1, column=1,)
 
 # OVERALL SENTIMENT
 tk.Label(counter_container, text="OVERALL SENTIMENT", font=("Lucida", 16, "bold"), bg="black", fg="#FE7F2D").grid(row=0, column=2)
