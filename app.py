@@ -192,7 +192,8 @@ CUSTOM_STOPWORDS = {"i", "me", "my", "mine", "you", "your", "yours", "he", "she"
     "should", "a", "an", "the", "and", "or", "but", "if", "in", "on", "for", "with",
     "as", "at", "by", "from", "about", "into", "of", "to", "up", "down", "out", "over",
     "under", "again", "further", "then", "once", "also", "like","blocker","really","able", "bit","well", "made", "led",
-    "especially", "schedule", "seeing","week", "got","day","consider","nothing","whole","blocker","honour", "moment", "right" , "result"}  
+    "especially", "schedule", "seeing","week", "got","day","consider","nothing","whole","blocker","honour", "moment", "right" , 
+    "result", "enjoyed","even","managed", "though", "lot", "faced", }  
 
 ALL_STOPWORDS = STOPWORDS.union(CUSTOM_STOPWORDS)
 
@@ -226,6 +227,7 @@ dataframe = dataframe_raw[selected_columns].copy()
 
 # Renamed Columns
 dataframe.columns = ["win", "loss", "blocker"]
+print(dataframe)
 
 # Cleaning Function
 def clean_text(text):
@@ -326,7 +328,9 @@ def get_top_words_and_pairs(series, n=10, stopwords=ALL_STOPWORDS):
 
     return top_words, top_pairs
 
-get_top_words_and_pairs(dataframe['win'], stopwords=ALL_STOPWORDS)
+wordpair_stopwords= [ALL_STOPWORDS ]
+
+get_top_words_and_pairs(dataframe['win'], stopwords=wordpair_stopwords)
 get_top_words_and_pairs(dataframe['loss'], stopwords=ALL_STOPWORDS)
 get_top_words_and_pairs(dataframe['blocker'], stopwords=ALL_STOPWORDS)
 
@@ -476,49 +480,49 @@ def plot_wordclouds():
 #         words = [terms[i] for i in topic.argsort()[-num_words:]]
 #         top_words.extend(words)
 
-#     # -------------------------
-#     # Theme Mapping
-#     # -------------------------
-#     positive_themes = {
-#         "Learning & Development": [
-#             "learn", "learning", "course", "datacamp", "plan", "study", 
-#             "practice", "improve", "skill", "knowledge", "training", 
-#             "develop", "achieve", "master", "understand", "enjoyed", 
-#             "completed", "success", "growth"
-#         ],
-#         "Collaboration & Teamwork": [
-#             "team", "collaboration", "partner", "together", "helped",
-#             "supported", "mentored", "guided"
-#         ],
-#         "Personal Achievement": [
-#             "win", "success", "goal", "milestone", "completed", "finished",
-#             "achievement", "challenge", "progress"
-#         ],
-#         "Positive Feedback & Recognition": [
-#             "appreciated", "recognized", "acknowledged", "praise",
-#             "rewarded", "complimented", "encouraged"
-#         ]
-#     }
+    # -------------------------
+    # Theme Mapping
+    # -------------------------
+    # positive_themes = {
+    #     "Learning & Development": [
+    #         "learn", "learning", "course", "datacamp", "plan", "study", 
+    #         "practice", "improve", "skill", "knowledge", "training", 
+    #         "develop", "achieve", "master", "understand", "enjoyed", 
+    #         "completed", "success", "growth"
+    #     ],
+    #     "Collaboration & Teamwork": [
+    #         "team", "collaboration", "partner", "together", "helped",
+    #         "supported", "mentored", "guided"
+    #     ],
+    #     "Personal Achievement": [
+    #         "win", "success", "goal", "milestone", "completed", "finished",
+    #         "achievement", "challenge", "progress"
+    #     ],
+    #     "Positive Feedback & Recognition": [
+    #         "appreciated", "recognized", "acknowledged", "praise",
+    #         "rewarded", "complimented", "encouraged"
+    #     ]
+    # }
 
-#     negative_themes = {
-#         "Network & Tech Issues": ["network", "issue", "problem", "error", "bug", "connectivity"],
-#         "Workload & Time Pressure": ["stress", "deadline", "pressure", "overwhelmed", "task", "busy"],
-#         "Learning Obstacles": ["confused", "stuck", "challenging", "difficult", "hard", "lost"],
-#         "Team & Communication Problems": ["miscommunication", "delay", "conflict", "misunderstood", "ignored"]
-#     }
+    # negative_themes = {
+    #     "Network & Tech Issues": ["network", "issue", "problem", "error", "bug", "connectivity"],
+    #     "Workload & Time Pressure": ["stress", "deadline", "pressure", "overwhelmed", "task", "busy"],
+    #     "Learning Obstacles": ["confused", "stuck", "challenging", "difficult", "hard", "lost"],
+    #     "Team & Communication Problems": ["miscommunication", "delay", "conflict", "misunderstood", "ignored"]
+    # }
 
-#     themes_dict = positive_themes if tab == "wins" else negative_themes
+    # themes_dict = positive_themes if tab == "wins" else negative_themes
 
-#     # Count theme hits
-#     theme_counts = {theme:0 for theme in themes_dict}
-#     for word in top_words:
-#         for theme, words in themes_dict.items():
-#             if word in words:
-#                 theme_counts[theme] += 1
+    # # Count theme hits
+    # theme_counts = {theme:0 for theme in themes_dict}
+    # for word in top_words:
+    #     for theme, words in themes_dict.items():
+    #         if word in words:
+    #             theme_counts[theme] += 1
 
-#     # Return dominant theme
-#     dominant_theme = max(theme_counts, key=theme_counts.get)
-#     return dominant_theme if theme_counts[dominant_theme] > 0 else "General"
+    # # Return dominant theme
+    # dominant_theme = max(theme_counts, key=theme_counts.get)
+    # return dominant_theme if theme_counts[dominant_theme] > 0 else "General"
 
 
 def wordpair_frame(root, top_words, pairs, title, raw_series):
@@ -535,11 +539,22 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     fig, ax = plt.subplots(figsize=(8, 5))
     labels = [f"{w} → {pairs[w]}" if pairs[w] else w for w in top_words.keys()]
     sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako")
-    ax.set_title(title, fontsize=16)
-    ax.set_xlabel("Frequency", fontsize=16, color="#FE7F2D")
-    ax.set_ylabel("Top Word → Pair", fontsize=16, color="#FE7F2D")
+    # Calculate percentages
+    total_count = sum(top_words.values())
+    percent_values = [v / total_count * 100 for v in top_words.values()]
 
-    fig.tight_layout()
+    # Draw barplot
+    sns.barplot(x=percent_values, y=labels, ax=ax, palette="mako")
+    
+
+    # Add percentages on top of each bar
+    for i, v in enumerate(percent_values):
+        ax.text(v + 0.5, i, f"{v:.1f}%", color="#FE7F2D", va="center", fontweight="bold")
+        ax.set_title(title, fontsize=16)
+        ax.set_xlabel("Frequency (n)", fontsize=16, color="#FE7F2D")
+        ax.set_ylabel("Top Word → Pair", fontsize=16, color="#FE7F2D")
+
+        fig.tight_layout()
     canvas = FigureCanvasTkAgg(fig, master=wordpair_frame)
     tk.Label(wordpair_frame, anchor="center", font=("Lucida", 20, "bold"),
              fg="#FE7F2D", bg="#000000", text="Word Frequency Analysis").grid(row=0, column=0)
