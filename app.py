@@ -191,9 +191,10 @@ CUSTOM_STOPWORDS = {"i", "me", "my", "mine", "you", "your", "yours", "he", "she"
     "being", "have", "has", "had", "do", "does", "did", "will", "would", "can", "could",
     "should", "a", "an", "the", "and", "or", "but", "if", "in", "on", "for", "with",
     "as", "at", "by", "from", "about", "into", "of", "to", "up", "down", "out", "over",
-    "under", "again", "further", "then", "once", "also", "like","blocker","really","able", "bit","well", "made", "led",
-    "especially", "schedule", "seeing","week", "got","day","consider","nothing","whole","blocker","honour", "moment", "right" , 
-    "result", "enjoyed","even","managed", "though", "lot", "faced", }  
+    "under", "again", "further", "then", "once", "also", "like","blocker","really","able",
+    "bit","well", "made", "led","especially", "schedule", "seeing","week", "got","day","consider",
+    "nothing","whole","blocker","honour", "moment", "right" ,"result", "enjoyed","even","managed", "though", "lot", "faced",
+     }  
 
 ALL_STOPWORDS = STOPWORDS.union(CUSTOM_STOPWORDS)
 
@@ -538,21 +539,23 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     # ----------------------
     fig, ax = plt.subplots(figsize=(8, 5))
     labels = [f"{w} → {pairs[w]}" if pairs[w] else w for w in top_words.keys()]
-    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="mako")
+    plt.yticks([0,1,2,3,4,5,6,7,8,9], [label.upper() for label in labels])
+    plt.gca().tick_params(axis='y', colors='black',)
+    sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="rocket")
     # Calculate percentages
     total_count = sum(top_words.values())
     percent_values = [v / total_count * 100 for v in top_words.values()]
 
     # Draw barplot
-    sns.barplot(x=percent_values, y=labels, ax=ax, palette="mako")
+    sns.barplot(x=percent_values, y=labels, ax=ax, palette="rocket")
     
 
     # Add percentages on top of each bar
     for i, v in enumerate(percent_values):
         ax.text(v + 0.5, i, f"{v:.1f}%", color="#FE7F2D", va="center", fontweight="bold")
         ax.set_title(title, fontsize=16)
-        ax.set_xlabel("Frequency (n)", fontsize=16, color="#FE7F2D")
-        ax.set_ylabel("Top Word → Pair", fontsize=16, color="#FE7F2D")
+        ax.set_xlabel("FREQUENCY (n)", fontsize=16, color="#FE7F2D")
+        ax.set_ylabel("TOP WORD → PAIR", fontsize=16, color="#FE7F2D")
 
         fig.tight_layout()
     canvas = FigureCanvasTkAgg(fig, master=wordpair_frame)
@@ -644,7 +647,7 @@ def show_word_pairs():
         wordpair_graph.add(tab, text=title ,padding=10 )
 
 
-    ttk.Button(word_frame, text="⬅ Back to Dashboard",
+    ttk.Button(word_frame, text="⬅ Back to Dashboard",font=("Lucida",15,), fg="#2D728F",background="#ffffff",
                command=lambda: [word_frame.pack_forget(), main_frame.pack(fill='both', expand=True)]
                ).pack(pady=10)
 
