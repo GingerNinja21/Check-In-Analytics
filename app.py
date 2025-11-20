@@ -228,7 +228,8 @@ dataframe = dataframe_raw[selected_columns].copy()
 
 # Renamed Columns
 dataframe.columns = ["win", "loss", "blocker"]
-print(dataframe)
+
+
 
 # Cleaning Function
 def clean_text(text):
@@ -243,7 +244,12 @@ def clean_text(text):
 for col in ["win", "loss", "blocker"]:
     dataframe[col] = dataframe[col].apply(clean_text)
 
-   
+# Clear Terminal (Comment the next line out if you would like to see package installation)
+os.system('cls' if os.name == 'nt' else 'clear')
+
+# View Cleaned and Filtered Dataframe in Terminal
+print(("\n"+("="*150))+f"\nCLEANED AND FILTERED DATAFRAME\n"+("="*150)+f"\n{dataframe.head()}")
+
 
 #===================================================================================#
 # Tokenization & Lemmatization                                                      #
@@ -271,7 +277,9 @@ def preprocess(text, stopwords=ALL_STOPWORDS):
 for col in ['win', 'loss', 'blocker']:
     dataframe[col] = dataframe[col].apply(lambda x: preprocess(x, stopwords=ALL_STOPWORDS))
 
-    print(dataframe.head())
+# View Lemmatized and Tokenized dataframe
+print(("\n"+("="*150))+f"\nLEMMATIZED AND TOKENIZED DATAFRAME\n"+("="*150)+f"\n{dataframe.head()}")
+
 
 #========================================================================================================#
 # Getting Top Words and Pairs                                                                            #
@@ -362,7 +370,9 @@ def analyze_sentiment(tokens):
 # Apply Sentiment Analysis to each column
 for col in ['win', 'loss', 'blocker']:
     dataframe[f"{col}_sentiment"] = dataframe[col].apply(analyze_sentiment)
-print(dataframe.head())
+
+# View Updated Dataframe in Terminal (Added Sentiment score Column)
+print(("\n"+("="*150))+f"\nDATAFRAME WITH SENTIMENT SCORE\n"+("="*150)+f"\n{dataframe.head()}")
 
 #===============================================================================#
 # Word Cloud Cluster                                                            #
@@ -447,6 +457,7 @@ def plot_wordclouds():
 # - Builds bar charts of the most common words along with thier strongest word-pair.  #
 # - Runs LDA on raw text in order to extract common themes.                           #
 # - Displays results in a Tkinter notebook.                                           #
+#  - NOTE: ...Work in Progress...                                                     #
 #=====================================================================================#
 # def run_lda_on_series(series, num_topics=20, num_words=20,tab="wins"):
 #     """
@@ -537,11 +548,16 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     # ----------------------
     # LEFT SIDE — BAR GRAPH
     # ----------------------
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(7,6))
     labels = [f"{w} → {pairs[w]}" if pairs[w] else w for w in top_words.keys()]
     plt.yticks([0,1,2,3,4,5,6,7,8,9], [label.upper() for label in labels])
-    plt.gca().tick_params(axis='y', colors='black',)
+    plt.gca().tick_params(axis="both", colors='white',)
     sns.barplot(x=list(top_words.values()), y=labels, ax=ax, palette="rocket")
+    ax.set_facecolor("#101010")      # Plot background
+    
+    fig.patch.set_facecolor("#000000")  # Outer background
+   
+
     # Calculate percentages
     total_count = sum(top_words.values())
     percent_values = [v / total_count * 100 for v in top_words.values()]
@@ -552,12 +568,12 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
 
     # Add percentages on top of each bar
     for i, v in enumerate(percent_values):
-        ax.text(v + 0.5, i, f"{v:.1f}%", color="#FE7F2D", va="center", fontweight="bold")
-        ax.set_title(title, fontsize=16)
+        ax.text(v + 0.5, i, f"{v:.1f}%", color="#FFFFFF", va="center", fontweight="bold")
+        ax.set_title(title, fontsize=16,color="#FE7F2D")
         ax.set_xlabel("FREQUENCY (n)", fontsize=16, color="#FE7F2D")
         ax.set_ylabel("TOP WORD → PAIR", fontsize=16, color="#FE7F2D")
-
         fig.tight_layout()
+
     canvas = FigureCanvasTkAgg(fig, master=wordpair_frame)
     tk.Label(wordpair_frame, anchor="center", font=("Lucida", 20, "bold"),
              fg="#FE7F2D", bg="#000000", text="Word Frequency Analysis").grid(row=0, column=0)
@@ -567,7 +583,7 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
     # ----------------------
     # RIGHT SIDE — DOMINANT THEMES
     # ----------------------
-    topic_box = tk.Text(wordpair_frame, width=40, height=20, wrap="word",
+    topic_box = tk.Text(wordpair_frame, width=20, height=20, wrap="word",
                         font=("Lucida", 15), bg="#FE7F2D", fg="#000000")
     topic_box.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
@@ -587,11 +603,14 @@ def wordpair_frame(root, top_words, pairs, title, raw_series):
 
     return wordpair_frame
 
+#===========================================================#
+# Extract Themes                                            #
+#===========================================================#
+# This function takes a list of tokens and filters through  # 
+# a dictionary of themes in order to return the Top 5 Themes#
+# NOTE: This is based of word occurence rather ran LDA      #
+#===========================================================#
 def LDA(tokens, themes_dict, top_n=5):
-    # This function takes a list of tokens and filters through  # 
-    # a dictionary of themes in order to return the Top 5 Themes#
-    # NOTE: This is based of word occurence rather ran LDA      #
-  
     token_counts = Counter(tokens)
     theme_scores = {}
 
@@ -609,25 +628,35 @@ def LDA(tokens, themes_dict, top_n=5):
     return sorted_themes[:top_n]
 
 def show_word_pairs():
-    main_frame.pack_forget()
-    #Styling
     style = ttk.Style()
-    style.configure("TNotebook", background="black")
-    style.configure("TNotebook.Tab",
-                    background="#000000",
-                    foreground="#FE7F2D",
-                    font=("Lucida", 12, "bold"),
-                    padding=[12, 6])
-    style.map("TNotebook.Tab",
-            background=[("selected", "#000000")],
-            foreground=[("selected", "#FE7F2D")])
+    style.theme_use("clam")
 
-    
+    style.configure(
+        "TNotebook",
+        background="#000000",
+        font=("Lucida",11),
+        borderwidth=0
+    )
+
+    style.configure(
+        "TNotebook.Tab",
+        background="#000000",
+        font=("Lucida",13),
+        foreground="#FE7F2D",
+        padding=[10, 6]
+    )
+
+    style.map(
+        "TNotebook.Tab",
+        background=[("selected", "#FE7F2D"), ("active", "#262626")],
+        foreground=[("selected", "#000000")]
+    )
+
     word_frame = tk.Frame(root, bg="#000000")
-    word_frame.pack(fill="x" ,expand=True )
-    
-    wordpair_graph = ttk.Notebook(word_frame,style="TNotebook")
-    wordpair_graph.pack(fill="x" , expand=True)
+    word_frame.pack(fill="x", expand=True)
+
+    wordpair_graph = ttk.Notebook(word_frame, style="TNotebook")
+    wordpair_graph.pack(fill="x", expand=True)
     
     top_wins, win_pairs = get_top_words_and_pairs(dataframe['win'],stopwords=ALL_STOPWORDS)
     top_losses, loss_pairs = get_top_words_and_pairs(dataframe['loss'],stopwords=ALL_STOPWORDS)
@@ -644,13 +673,22 @@ def show_word_pairs():
 
     for title, (top_words, pairs) in frames.items():
         tab = wordpair_frame(wordpair_graph, top_words, pairs, title, dataframe[column_map[title]])
-        wordpair_graph.add(tab, text=title ,padding=10 )
+        wordpair_graph.add(tab, text=title ,padding=10)
 
 
-    ttk.Button(word_frame, text="⬅ Back to Dashboard",font=("Lucida",15,), fg="#2D728F",background="#ffffff",
-               command=lambda: [word_frame.pack_forget(), main_frame.pack(fill='both', expand=True)]
-               ).pack(pady=10)
-
+    back_btn = tk.Button(
+        root,
+        text="⬅ Back to Dashboard",
+        command=lambda: [
+            word_frame.pack_forget(),
+            main_frame.pack(fill='both', expand=True),
+            back_btn.pack_forget()
+        ],
+        font=("Lucida",15), 
+        fg="#2D728F",
+        background="#ffffff"
+    )
+    back_btn.pack( pady=10)
     update_counters()
 
 
@@ -780,6 +818,34 @@ lbl_sentiment = tk.Label(counter_container, text="Neutral", font=("Lucida", 50, 
 lbl_sentiment.grid(row=1, column=2)
 
 
+
+
+#================================================================================================#
+# Miscellaneous Functions       WORK IN PROGRESS                                                 #
+#================================================================================================#
+
+# """
+#     Universal CSV merge function.
+
+#     target_path: string path to the CSV file
+#     new_df: a DataFrame containing NEW data you want to add
+#     unique_cols: list of column names used to identify duplicates 
+#                  (e.g., ["word"], ["id"], ["word", "category"], etc.)
+#     """
+# def send_to_csv(target_path, data, unique_cols):
+#     if os.path.exists(target_path):
+#         old_df = pd.read_csv(target_path)
+#         combined = pd.concat([old_df, data], ignore_index=True)
+#         combined = combined.drop_duplicates(subset=unique_cols, keep="last")
+#     else:
+#         combined = dataframe
+#     combined.to_csv(target_path, index=False)
+
+#     return combined
+
+
+# wc_df = pd.DataFrame(word_counts.items(), columns=["word", "count"])
+# send_to_csv("Exported_csv/word_counts.csv", word_counts, unique_cols=["word"])
 
 
 update_counters()
